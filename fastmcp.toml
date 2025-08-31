@@ -1,0 +1,40 @@
+[project]
+name = "catabus-mcp"
+version = "0.1.0"
+description = "MCP server for CATA bus system live and static schedule data"
+author = "CATA Bus MCP Contributors"
+license = "MIT"
+
+[server]
+module = "catabus_mcp.server_v2"
+server_object = "mcp"
+python_version = "3.11"
+
+[environment]
+TZ = "America/New_York"
+
+[deployment]
+memory = 512
+timeout = 30
+max_concurrent_requests = 100
+
+[dependencies]
+fastmcp = ">=2.0.0"
+aiohttp = ">=3.9.0"
+gtfs-realtime-bindings = ">=1.0.0"
+pydantic = ">=2.5.0"
+python-dateutil = ">=2.8.0"
+pytz = ">=2024.1"
+aiofiles = ">=23.2.0"
+
+[monitoring]
+health_check_path = "/health"
+health_check_interval = 60
+
+[caching]
+enable_cache = true
+cache_ttl = 86400  # 24 hours for static GTFS data
+
+[logging]
+level = "INFO"
+format = "json"
