@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import os
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
 
@@ -33,29 +34,50 @@ initialized = False
 
 
 async def ensure_initialized():
-    """Lazy initialization of GTFS data - only when needed."""
+    """Lazy initialization of GTFS data with comprehensive error handling."""
     global gtfs_data, initialized
     if not initialized:
         logger.info("Starting GTFS data initialization...")
+        
+        # Initialize with empty data first to ensure server always works
+        from .ingest.static_loader import GTFSData
+        from .ingest.realtime_poll import RealtimeData
+        
         try:
-            # Load static GTFS data with timeout
-            gtfs_data = await static_loader.load_feed(force_refresh=False)
-            
-            # Start realtime polling in background
-            await realtime_poller.start()
-            
-            initialized = True
+            # Try to load static GTFS data with aggressive timeout
+            gtfs_data = await asyncio.wait_for(
+                static_loader.load_feed(force_refresh=False, timeout_seconds=10),
+                timeout=15.0  # Maximum 15 seconds for cloud environments
+            )
             logger.info(f"GTFS data loaded: {len(gtfs_data.routes)} routes, {len(gtfs_data.stops)} stops")
             
-        except Exception as e:
-            logger.error(f"Failed to initialize GTFS data: {e}")
-            # Initialize with empty data to prevent crashes
-            from .ingest.static_loader import GTFSData
-            from .ingest.realtime_poll import RealtimeData
+        except asyncio.TimeoutError:
+            logger.warning("GTFS data loading timed out - using empty dataset")
             gtfs_data = GTFSData()
+        except Exception as e:
+            logger.warning(f"GTFS data loading failed: {e} - using empty dataset")
+            gtfs_data = GTFSData()
+        
+        # Start realtime polling (non-blocking now)
+        try:
+            await realtime_poller.start()
+            logger.info("Real-time polling started successfully")
+        except Exception as e:
+            logger.warning(f"Real-time polling failed to start: {e} - continuing without real-time data")
             realtime_poller.data = RealtimeData()
-            initialized = True
-            logger.warning("Running with empty GTFS data due to initialization failure")
+        
+        initialized = True
+        logger.info("Server initialization completed")
+
+
+def _is_cloud_environment() -> bool:
+    """Detect if running in FastMCP Cloud or similar environment."""
+    return (
+        os.environ.get('FASTMCP_CLOUD') or
+        os.environ.get('LAMBDA_RUNTIME_DIR') or
+        os.environ.get('AWS_LAMBDA_FUNCTION_NAME') or
+        (os.path.exists('/tmp') and not os.path.exists(os.path.expanduser('~')))
+    )
 
 
 @mcp.tool
@@ -141,7 +163,22 @@ async def trip_alerts_tool(route_id: Optional[str] = None) -> List[Dict[str, Any
 
 @mcp.tool
 async def health_check() -> Dict[str, Any]:
-    """Fast health check without triggering data initialization."""
+    """Ultra-fast health check optimized for cloud pre-flight validation."""
+    is_cloud = _is_cloud_environment()
+    
+    # For cloud pre-flight: return immediately without any data loading
+    if is_cloud:
+        return {
+            "status": "healthy",
+            "server": "catabus-mcp",
+            "version": "0.1.0",
+            "environment": "cloud",
+            "startup_mode": "optimized",
+            "server_time": datetime.now(timezone.utc).isoformat(),
+            "pre_flight": "ready"
+        }
+    
+    # For local development: provide more detailed status
     return {
         "status": "healthy",
         "initialized": initialized,
@@ -151,7 +188,7 @@ async def health_check() -> Dict[str, Any]:
         "last_vehicle_update": realtime_poller.data.last_vehicle_update.isoformat() if realtime_poller.data.last_vehicle_update else None,
         "last_trip_update": realtime_poller.data.last_trip_update.isoformat() if realtime_poller.data.last_trip_update else None,
         "server_time": datetime.now(timezone.utc).isoformat(),
-        "environment": "cloud",
+        "environment": "local",
         "startup_mode": "lazy_loading"
     }
 

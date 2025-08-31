@@ -67,19 +67,32 @@ class RealtimeGTFSPoller:
         self._session: Optional[aiohttp.ClientSession] = None
 
     async def start(self):
-        """Start the polling tasks."""
+        """Start the polling tasks without blocking startup."""
         if self._running:
             return
         
         self._running = True
         self._session = aiohttp.ClientSession()
         
-        # Start three separate polling tasks with staggered starts
-        asyncio.create_task(self._poll_vehicle_positions())
-        await asyncio.sleep(5)  # Stagger to avoid hitting all endpoints at once
-        asyncio.create_task(self._poll_trip_updates())
-        await asyncio.sleep(5)
-        asyncio.create_task(self._poll_alerts())
+        # Start tasks immediately for fast cloud startup
+        # Use background task with internal staggering to avoid blocking
+        asyncio.create_task(self._start_staggered_polling())
+
+    async def _start_staggered_polling(self):
+        """Start polling tasks with internal staggering - non-blocking."""
+        try:
+            # Start immediately without blocking main startup
+            asyncio.create_task(self._poll_vehicle_positions())
+            
+            # Stagger other tasks in background
+            await asyncio.sleep(5)
+            asyncio.create_task(self._poll_trip_updates())
+            
+            await asyncio.sleep(5)
+            asyncio.create_task(self._poll_alerts())
+            
+        except Exception as e:
+            logger.error(f"Error starting staggered polling: {e}")
 
     async def stop(self):
         """Stop the polling tasks."""
