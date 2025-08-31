@@ -33,15 +33,20 @@ initialized = False
 
 
 async def ensure_initialized():
-    """Ensure data is initialized before tool calls."""
+    """Lazy initialization of GTFS data - only when needed."""
     global gtfs_data, initialized
     if not initialized:
-        logger.info("Initializing GTFS data for cloud deployment...")
+        logger.info("Starting GTFS data initialization...")
         try:
-            gtfs_data = await static_loader.load_feed()
+            # Load static GTFS data with timeout
+            gtfs_data = await static_loader.load_feed(force_refresh=False)
+            
+            # Start realtime polling in background
             await realtime_poller.start()
+            
             initialized = True
-            logger.info(f"GTFS data initialized: {len(gtfs_data.routes)} routes, {len(gtfs_data.stops)} stops")
+            logger.info(f"GTFS data loaded: {len(gtfs_data.routes)} routes, {len(gtfs_data.stops)} stops")
+            
         except Exception as e:
             logger.error(f"Failed to initialize GTFS data: {e}")
             # Initialize with empty data to prevent crashes
@@ -50,6 +55,7 @@ async def ensure_initialized():
             gtfs_data = GTFSData()
             realtime_poller.data = RealtimeData()
             initialized = True
+            logger.warning("Running with empty GTFS data due to initialization failure")
 
 
 @mcp.tool
@@ -135,8 +141,7 @@ async def trip_alerts_tool(route_id: Optional[str] = None) -> List[Dict[str, Any
 
 @mcp.tool
 async def health_check() -> Dict[str, Any]:
-    """Check server health and data status."""
-    await ensure_initialized()
+    """Fast health check without triggering data initialization."""
     return {
         "status": "healthy",
         "initialized": initialized,
@@ -146,7 +151,20 @@ async def health_check() -> Dict[str, Any]:
         "last_vehicle_update": realtime_poller.data.last_vehicle_update.isoformat() if realtime_poller.data.last_vehicle_update else None,
         "last_trip_update": realtime_poller.data.last_trip_update.isoformat() if realtime_poller.data.last_trip_update else None,
         "server_time": datetime.now(timezone.utc).isoformat(),
-        "environment": "cloud"
+        "environment": "cloud",
+        "startup_mode": "lazy_loading"
+    }
+
+
+@mcp.tool
+async def initialize_data() -> Dict[str, Any]:
+    """Manually trigger GTFS data initialization."""
+    await ensure_initialized()
+    return {
+        "status": "initialized" if initialized else "failed",
+        "routes_loaded": len(gtfs_data.routes) if gtfs_data else 0,
+        "stops_loaded": len(gtfs_data.stops) if gtfs_data else 0,
+        "message": "GTFS data has been loaded" if initialized else "Failed to load GTFS data"
     }
 
 
