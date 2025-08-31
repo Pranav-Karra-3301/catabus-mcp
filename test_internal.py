@@ -2,7 +2,7 @@
 """Test CATA Bus server by calling the internal functions."""
 
 import asyncio
-from src.catabus_mcp.server_v2 import (
+from src.catabus_mcp.server import (
     ensure_initialized,
     list_routes,
     search_stops,

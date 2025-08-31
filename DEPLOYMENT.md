@@ -132,10 +132,10 @@ Run locally before deploying:
 pip install -e .
 
 # Run server
-python -m catabus_mcp.server_v2
+python -m catabus_mcp.server
 
 # Or with FastMCP CLI
-fastmcp run src/catabus_mcp/server_v2.py:mcp
+fastmcp run src/catabus_mcp/server.py:mcp
 ```
 
 ## CI/CD

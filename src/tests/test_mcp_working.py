@@ -6,7 +6,7 @@ from unittest.mock import patch, Mock
 from datetime import datetime, timezone
 
 from fastmcp import Client
-from catabus_mcp.server_v2 import mcp
+from catabus_mcp.server import mcp
 from catabus_mcp.ingest.static_loader import GTFSData, Route, Stop
 from catabus_mcp.ingest.realtime_poll import RealtimeData, VehiclePosition
 

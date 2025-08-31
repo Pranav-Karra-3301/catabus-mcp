@@ -172,6 +172,12 @@ async def initialize_data() -> Dict[str, Any]:
 server = mcp
 app = mcp.http_app()
 
+
+def main():
+    """Entry point for CLI usage via pyproject.toml scripts."""
+    mcp.run()
+
+
 # Optional local development entry point
 if __name__ == "__main__":
     import uvicorn

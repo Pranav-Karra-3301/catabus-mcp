@@ -5,7 +5,7 @@ import asyncio
 from fastmcp import Client
 
 # Import the server module
-from src.catabus_mcp.server_v2 import mcp
+from src.catabus_mcp.server import mcp
 
 
 async def test_server():

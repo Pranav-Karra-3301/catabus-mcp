@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from unittest.mock import patch, Mock
 
 from fastmcp import Client
-from catabus_mcp.server_v2 import mcp
+from catabus_mcp.server import mcp
 
 
 class TestMCPIntegration:

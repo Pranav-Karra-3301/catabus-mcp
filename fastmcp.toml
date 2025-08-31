@@ -6,7 +6,7 @@ author = "CATA Bus MCP Contributors"
 license = "MIT"
 
 [server]
-module = "catabus_mcp.server_v2"
+module = "catabus_mcp.server"
 server_object = "mcp"
 python_version = "3.11"
 

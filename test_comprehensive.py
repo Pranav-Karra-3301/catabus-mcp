@@ -4,7 +4,7 @@
 import asyncio
 import json
 from fastmcp import Client
-from src.catabus_mcp.server_v2 import mcp
+from src.catabus_mcp.server import mcp
 
 
 def extract_result(result):

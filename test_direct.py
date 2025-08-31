@@ -3,7 +3,7 @@
 
 import asyncio
 import json
-from src.catabus_mcp.server_v2 import (
+from src.catabus_mcp.server import (
     list_routes_tool,
     search_stops_tool,
     vehicle_positions_tool,
