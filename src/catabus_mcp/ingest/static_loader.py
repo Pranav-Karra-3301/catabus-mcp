@@ -15,7 +15,12 @@ import aiohttp
 logger = logging.getLogger(__name__)
 
 GTFS_STATIC_URL = "https://catabus.com/wp-content/uploads/google_transit.zip"
-CACHE_DIR = Path("cache")
+# Use /tmp for cache in cloud environments, local cache dir otherwise
+import os
+if os.environ.get('LAMBDA_RUNTIME_DIR') or os.environ.get('AWS_LAMBDA_FUNCTION_NAME'):
+    CACHE_DIR = Path("/tmp/catabus_cache")
+else:
+    CACHE_DIR = Path("cache")
 
 
 @dataclass
