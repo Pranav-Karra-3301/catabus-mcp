@@ -168,6 +168,12 @@ async def initialize_data() -> Dict[str, Any]:
     }
 
 
-# FastMCP Cloud entry point
+# Export the FastMCP server and app for FastMCP Cloud
+server = mcp
+app = mcp.http_app()
+
+# Optional local development entry point
 if __name__ == "__main__":
-    mcp.run()
+    import uvicorn
+    # Bind to 0.0.0.0:8080 for FastMCP Cloud compatibility
+    uvicorn.run(app, host="0.0.0.0", port=8080)
