@@ -15,12 +15,19 @@ import aiohttp
 logger = logging.getLogger(__name__)
 
 GTFS_STATIC_URL = "https://catabus.com/wp-content/uploads/google_transit.zip"
-# Use /tmp for cache in cloud environments, local cache dir otherwise
+# Detect cloud environment for cache directory
 import os
-if os.environ.get('LAMBDA_RUNTIME_DIR') or os.environ.get('AWS_LAMBDA_FUNCTION_NAME'):
-    CACHE_DIR = Path("/tmp/catabus_cache")
-else:
-    CACHE_DIR = Path("cache")
+def get_cache_dir():
+    # FastMCP Cloud, Lambda, or other cloud environments
+    if (os.environ.get('LAMBDA_RUNTIME_DIR') or 
+        os.environ.get('AWS_LAMBDA_FUNCTION_NAME') or
+        os.environ.get('FASTMCP_CLOUD') or
+        os.path.exists('/tmp') and not os.path.exists(os.path.expanduser('~'))):
+        return Path("/tmp/catabus_cache")
+    else:
+        return Path("cache")
+
+CACHE_DIR = get_cache_dir()
 
 
 @dataclass
@@ -79,16 +86,23 @@ class StaticGTFSLoader:
         self.data = GTFSData()
         CACHE_DIR.mkdir(exist_ok=True)
 
-    async def download_feed(self, timeout_seconds: int = 30) -> bytes:
-        """Download the static GTFS feed with timeout."""
-        timeout = aiohttp.ClientTimeout(total=timeout_seconds)
+    async def download_feed(self, timeout_seconds: int = 15) -> bytes:
+        """Download the static GTFS feed with strict timeout for cloud deployment."""
+        timeout = aiohttp.ClientTimeout(total=timeout_seconds, connect=5)
         async with aiohttp.ClientSession(timeout=timeout) as session:
             logger.info(f"Downloading GTFS feed from {GTFS_STATIC_URL} (timeout: {timeout_seconds}s)")
-            async with session.get(GTFS_STATIC_URL) as response:
-                response.raise_for_status()
-                content = await response.read()
-                logger.info(f"Downloaded GTFS feed: {len(content)} bytes")
-                return content
+            try:
+                async with session.get(GTFS_STATIC_URL) as response:
+                    response.raise_for_status()
+                    content = await response.read()
+                    logger.info(f"Downloaded GTFS feed: {len(content)} bytes")
+                    return content
+            except asyncio.TimeoutError:
+                logger.error(f"Download timed out after {timeout_seconds}s")
+                raise
+            except Exception as e:
+                logger.error(f"Download failed: {e}")
+                raise
 
     def parse_csv(self, content: str) -> List[Dict[str, str]]:
         """Parse CSV content into list of dictionaries."""
@@ -96,42 +110,49 @@ class StaticGTFSLoader:
         return list(reader)
 
     async def load_feed(self, force_refresh: bool = False, timeout_seconds: int = 30) -> GTFSData:
-        """Load and parse the GTFS static feed with timeout controls."""
+        """Load and parse the GTFS static feed with improved error handling."""
         cache_file = CACHE_DIR / "google_transit.zip"
-        
-        # Check cache first
-        if not force_refresh and cache_file.exists():
-            # Check if cache is less than 24 hours old
-            age = datetime.now().timestamp() - cache_file.stat().st_mtime
-            if age < 86400:  # 24 hours
-                logger.info("Using cached GTFS feed")
-                async with aiofiles.open(cache_file, "rb") as f:
-                    feed_data = await f.read()
-            else:
-                logger.info("Cache expired, downloading fresh feed")
-                try:
-                    feed_data = await self.download_feed(timeout_seconds)
-                    async with aiofiles.open(cache_file, "wb") as f:
-                        await f.write(feed_data)
-                except Exception as e:
-                    logger.warning(f"Download failed, using expired cache: {e}")
-                    async with aiofiles.open(cache_file, "rb") as f:
-                        feed_data = await f.read()
-        else:
-            logger.info("Downloading fresh GTFS feed")
+        feed_data: Optional[bytes] = None
+
+        # Attempt to download fresh data first
+        if force_refresh or not cache_file.exists():
+            logger.info("Downloading fresh GTFS feed.")
             try:
                 feed_data = await self.download_feed(timeout_seconds)
                 async with aiofiles.open(cache_file, "wb") as f:
                     await f.write(feed_data)
+                logger.info("Successfully downloaded and cached GTFS feed.")
             except Exception as e:
                 logger.error(f"Failed to download GTFS feed: {e}")
-                # If we have a cache file, use it even if old
                 if cache_file.exists():
-                    logger.warning("Using old cached feed due to download failure")
+                    logger.warning("Using stale cached feed due to download failure.")
                     async with aiofiles.open(cache_file, "rb") as f:
                         feed_data = await f.read()
                 else:
-                    raise Exception(f"No GTFS data available: {e}")
+                    logger.critical("No cached GTFS data available. The server will run without static data.")
+                    return self.data # Return empty data
+        else:
+            # Use cached data if it's not too old
+            age = datetime.now().timestamp() - cache_file.stat().st_mtime
+            if age < 86400:  # 24 hours
+                logger.info("Using fresh cached GTFS feed.")
+                async with aiofiles.open(cache_file, "rb") as f:
+                    feed_data = await f.read()
+            else:
+                logger.info("Cached GTFS feed is stale. Attempting to refresh.")
+                try:
+                    feed_data = await self.download_feed(timeout_seconds)
+                    async with aiofiles.open(cache_file, "wb") as f:
+                        await f.write(feed_data)
+                    logger.info("Successfully refreshed and cached GTFS feed.")
+                except Exception as e:
+                    logger.warning(f"Failed to refresh stale cache: {e}. Using stale cache.")
+                    async with aiofiles.open(cache_file, "rb") as f:
+                        feed_data = await f.read()
+        
+        if not feed_data:
+            logger.error("Failed to load GTFS data from any source.")
+            return self.data # Return empty data
 
         # Parse the feed
         with zipfile.ZipFile(io.BytesIO(feed_data)) as zf:

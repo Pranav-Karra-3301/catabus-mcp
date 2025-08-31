@@ -178,10 +178,12 @@ class RealtimeGTFSPoller:
                     
                     self.data.trip_updates = updates
                     self.data.last_trip_update = datetime.now(timezone.utc)
-                    logger.debug(f"Updated {len(updates)} trip updates")
-                    
+                    logger.info(f"Successfully updated {len(updates)} trip updates.")
+                else:
+                    logger.warning("No data received from trip updates endpoint.")
+
             except Exception as e:
-                logger.error(f"Error polling trip updates: {e}")
+                logger.error(f"An exception occurred while polling trip updates: {e}", exc_info=True)
             
             await asyncio.sleep(MIN_POLL_INTERVAL)
 
