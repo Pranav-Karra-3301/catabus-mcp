@@ -2,6 +2,10 @@
 
 A **Model Context Protocol (MCP)** server that provides live and static schedule data for the **Centre Area Transportation Authority (CATA)** bus system in State College, PA.
 
+<a href="https://glama.ai/mcp/servers/@Pranav-Karra-3301/catabus-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@Pranav-Karra-3301/catabus-mcp/badge" alt="CATA Bus Server MCP server" />
+</a>
+
 ## 🌟 Features
 
 - **Real-time vehicle positions** - Track buses live on their routes
