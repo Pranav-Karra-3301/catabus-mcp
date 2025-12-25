@@ -1,5 +1,6 @@
 """Static GTFS feed loader for CATA bus data."""
 
+import asyncio
 import csv
 import io
 import logging

@@ -56,11 +56,11 @@ async def next_arrivals(
         
         # Parse arrival time
         arrival_time, days_offset = parse_gtfs_time(stop_time.arrival_time)
-        scheduled_datetime = datetime.combine(
+        # Must use localize() with pytz timezones, not datetime.combine(..., tzinfo)
+        scheduled_datetime = eastern.localize(datetime.combine(
             now.date() + timedelta(days=days_offset),
-            arrival_time,
-            eastern
-        )
+            arrival_time
+        ))
         
         # Check if within horizon
         if now <= scheduled_datetime <= horizon:

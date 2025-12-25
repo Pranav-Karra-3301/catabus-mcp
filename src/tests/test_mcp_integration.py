@@ -15,7 +15,7 @@ class TestMCPIntegration:
     @pytest.mark.asyncio
     async def test_server_initialization(self):
         """Test that server initializes properly with mocked data."""
-        with patch('catabus_mcp.server_v2.ensure_initialized') as mock_init:
+        with patch('catabus_mcp.server.ensure_initialized') as mock_init:
             mock_init.return_value = None
             
             client = Client(mcp)
@@ -80,9 +80,9 @@ class TestRealWorldScenarios:
     @pytest.mark.asyncio
     async def test_blue_loop_tracking_scenario(self, mock_cata_data):
         """Test complete Blue Loop tracking scenario."""
-        with patch('catabus_mcp.server_v2.list_routes') as mock_list_routes:
-            with patch('catabus_mcp.server_v2.vehicle_positions') as mock_vehicles:
-                with patch('catabus_mcp.server_v2.initialized', True):
+        with patch('catabus_mcp.server.list_routes') as mock_list_routes:
+            with patch('catabus_mcp.server.vehicle_positions') as mock_vehicles:
+                with patch('catabus_mcp.server.initialized', True):
                     
                     # Mock responses
                     mock_list_routes.return_value = mock_cata_data["routes"]
@@ -105,9 +105,9 @@ class TestRealWorldScenarios:
     @pytest.mark.asyncio 
     async def test_stop_search_and_arrivals_scenario(self, mock_cata_data):
         """Test searching stops and getting arrivals."""
-        with patch('catabus_mcp.server_v2.search_stops') as mock_search:
-            with patch('catabus_mcp.server_v2.next_arrivals') as mock_arrivals:
-                with patch('catabus_mcp.server_v2.initialized', True):
+        with patch('catabus_mcp.server.search_stops') as mock_search:
+            with patch('catabus_mcp.server.next_arrivals') as mock_arrivals:
+                with patch('catabus_mcp.server.initialized', True):
                     
                     # Mock responses
                     mock_search.return_value = mock_cata_data["stops"]
@@ -143,7 +143,7 @@ class TestErrorHandlingBestPractices:
     @pytest.mark.asyncio
     async def test_graceful_degradation(self):
         """Test server handles data loading failures gracefully."""
-        with patch('catabus_mcp.server_v2.ensure_initialized') as mock_init:
+        with patch('catabus_mcp.server.ensure_initialized') as mock_init:
             # Simulate initialization failure
             mock_init.side_effect = Exception("GTFS download failed")
             
@@ -161,7 +161,7 @@ class TestErrorHandlingBestPractices:
     @pytest.mark.asyncio
     async def test_invalid_input_validation(self):
         """Test proper input validation."""
-        with patch('catabus_mcp.server_v2.initialized', True):
+        with patch('catabus_mcp.server.initialized', True):
             client = Client(mcp)
             async with client:
                 # Test missing required parameter
@@ -182,10 +182,10 @@ class TestPerformanceBestPractices:
     @pytest.mark.asyncio
     async def test_concurrent_tool_calls(self):
         """Test server handles concurrent requests properly."""
-        with patch('catabus_mcp.server_v2.initialized', True):
-            with patch('catabus_mcp.server_v2.list_routes') as mock_routes:
-                with patch('catabus_mcp.server_v2.search_stops') as mock_search:
-                    with patch('catabus_mcp.server_v2.vehicle_positions') as mock_vehicles:
+        with patch('catabus_mcp.server.initialized', True):
+            with patch('catabus_mcp.server.list_routes') as mock_routes:
+                with patch('catabus_mcp.server.search_stops') as mock_search:
+                    with patch('catabus_mcp.server.vehicle_positions') as mock_vehicles:
                         
                         # Mock quick responses
                         mock_routes.return_value = [{"route_id": "BL", "short_name": "BL", "long_name": "Blue Loop", "color": "#0000FF"}]
@@ -212,8 +212,8 @@ class TestPerformanceBestPractices:
     @pytest.mark.asyncio
     async def test_response_time_reasonable(self):
         """Test that responses come back in reasonable time."""
-        with patch('catabus_mcp.server_v2.initialized', True):
-            with patch('catabus_mcp.server_v2.list_routes') as mock_routes:
+        with patch('catabus_mcp.server.initialized', True):
+            with patch('catabus_mcp.server.list_routes') as mock_routes:
                 mock_routes.return_value = [{"route_id": "BL", "short_name": "BL", "long_name": "Blue Loop", "color": "#0000FF"}]
                 
                 client = Client(mcp)
@@ -241,9 +241,9 @@ class TestDataConsistency:
             {"vehicle_id": "BUS_001", "lat": 40.7982, "lon": -77.8599, "bearing": 90.0, "speed_mps": 10.5}
         ]
         
-        with patch('catabus_mcp.server_v2.initialized', True):
-            with patch('catabus_mcp.server_v2.list_routes', return_value=mock_routes):
-                with patch('catabus_mcp.server_v2.vehicle_positions', return_value=mock_vehicles):
+        with patch('catabus_mcp.server.initialized', True):
+            with patch('catabus_mcp.server.list_routes', return_value=mock_routes):
+                with patch('catabus_mcp.server.vehicle_positions', return_value=mock_vehicles):
                     
                     client = Client(mcp)
                     async with client:
