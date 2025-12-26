@@ -1,14 +1,15 @@
 """Tests for the FastMCP server."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from catabus_mcp.server import (
     list_routes_tool,
-    search_stops_tool,
     next_arrivals_tool,
-    vehicle_positions_tool,
+    search_stops_tool,
     trip_alerts_tool,
+    vehicle_positions_tool,
 )
 
 
