@@ -23,6 +23,6 @@ async def list_routes(gtfs_data: GTFSData) -> list[dict[str, Any]]:
             }
         )
 
-    # Sort by short name for consistency
-    routes.sort(key=lambda x: x["short_name"])
+    # Sort by short name for consistency (use empty string for None)
+    routes.sort(key=lambda x: x.get("short_name") or "")
     return routes

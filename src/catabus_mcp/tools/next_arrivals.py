@@ -9,8 +9,13 @@ from ..ingest.realtime_poll import RealtimeData
 from ..ingest.static_loader import GTFSData
 
 
-def parse_gtfs_time(time_str: str) -> time:
-    """Parse GTFS time format (can be > 24:00:00 for next day)."""
+def parse_gtfs_time(time_str: str) -> tuple[time, int]:
+    """Parse GTFS time format (can be > 24:00:00 for next day).
+
+    Returns:
+        A tuple of (time object, days_offset) where days_offset is 0 or more
+        for times that extend past midnight.
+    """
     parts = time_str.split(":")
     hours = int(parts[0])
     minutes = int(parts[1])

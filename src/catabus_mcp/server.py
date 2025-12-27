@@ -32,7 +32,7 @@ gtfs_data = None
 initialized = False
 
 
-async def ensure_initialized():
+async def ensure_initialized() -> None:
     """Lazy initialization of GTFS data with comprehensive error handling."""
     global gtfs_data, initialized
     if not initialized:
@@ -48,9 +48,10 @@ async def ensure_initialized():
                 static_loader.load_feed(force_refresh=False, timeout_seconds=10),
                 timeout=15.0,  # Maximum 15 seconds for cloud environments
             )
-            logger.info(
-                f"GTFS data loaded: {len(gtfs_data.routes)} routes, {len(gtfs_data.stops)} stops"
-            )
+            if gtfs_data:
+                logger.info(
+                    f"GTFS data loaded: {len(gtfs_data.routes)} routes, {len(gtfs_data.stops)} stops"
+                )
 
         except TimeoutError:
             logger.warning("GTFS data loading timed out - using empty dataset")
@@ -75,7 +76,7 @@ async def ensure_initialized():
 
 def _is_cloud_environment() -> bool:
     """Detect if running in FastMCP Cloud or similar environment."""
-    return (
+    return bool(
         os.environ.get("FASTMCP_CLOUD")
         or os.environ.get("LAMBDA_RUNTIME_DIR")
         or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
@@ -214,7 +215,7 @@ async def initialize_data() -> dict[str, Any]:
 server = mcp
 
 
-def main():
+def main() -> None:
     """Entry point for CLI usage via pyproject.toml scripts."""
     mcp.run()
 

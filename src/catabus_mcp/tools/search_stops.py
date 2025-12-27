@@ -37,6 +37,6 @@ async def search_stops(gtfs_data: GTFSData, query: str) -> list[dict[str, Any]]:
                 }
             )
 
-    # Sort by name for consistency
-    results.sort(key=lambda x: x["name"])
+    # Sort by name for consistency (use empty string for None)
+    results.sort(key=lambda x: str(x.get("name") or ""))
     return results

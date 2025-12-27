@@ -7,7 +7,8 @@ from datetime import UTC, datetime
 
 import aiohttp
 from google.transit import gtfs_realtime_pb2
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ class TripUpdate(BaseModel):
     route_id: str | None = None
     vehicle_id: str | None = None
     timestamp: datetime
-    stop_time_updates: list[dict] = field(default_factory=list)
+    stop_time_updates: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class ServiceAlert(BaseModel):
@@ -47,8 +48,8 @@ class ServiceAlert(BaseModel):
     header: str
     description: str | None = None
     severity: str = "UNKNOWN"
-    active_periods: list[dict] = field(default_factory=list)
-    informed_entities: list[dict] = field(default_factory=list)
+    active_periods: list[dict[str, Any]] = Field(default_factory=list)
+    informed_entities: list[dict[str, Any]] = Field(default_factory=list)
 
 
 @dataclass
@@ -62,12 +63,12 @@ class RealtimeData:
 
 
 class RealtimeGTFSPoller:
-    def __init__(self):
+    def __init__(self) -> None:
         self.data = RealtimeData()
         self._running = False
         self._session: aiohttp.ClientSession | None = None
 
-    async def start(self):
+    async def start(self) -> None:
         """Start the polling tasks without blocking startup."""
         if self._running:
             return
@@ -79,7 +80,7 @@ class RealtimeGTFSPoller:
         # Use background task with internal staggering to avoid blocking
         asyncio.create_task(self._start_staggered_polling())
 
-    async def _start_staggered_polling(self):
+    async def _start_staggered_polling(self) -> None:
         """Start polling tasks with internal staggering - non-blocking."""
         try:
             # Start immediately without blocking main startup
@@ -95,7 +96,7 @@ class RealtimeGTFSPoller:
         except Exception as e:
             logger.error(f"Error starting staggered polling: {e}")
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop the polling tasks."""
         self._running = False
         if self._session:
@@ -114,7 +115,7 @@ class RealtimeGTFSPoller:
             logger.error(f"Error fetching {url}: {e}")
             return None
 
-    async def _poll_vehicle_positions(self):
+    async def _poll_vehicle_positions(self) -> None:
         """Poll vehicle positions endpoint."""
         while self._running:
             try:
@@ -168,7 +169,7 @@ class RealtimeGTFSPoller:
 
             await asyncio.sleep(MIN_POLL_INTERVAL)
 
-    async def _poll_trip_updates(self):
+    async def _poll_trip_updates(self) -> None:
         """Poll trip updates endpoint."""
         while self._running:
             try:
@@ -247,7 +248,7 @@ class RealtimeGTFSPoller:
 
             await asyncio.sleep(MIN_POLL_INTERVAL)
 
-    async def _poll_alerts(self):
+    async def _poll_alerts(self) -> None:
         """Poll service alerts endpoint."""
         while self._running:
             try:

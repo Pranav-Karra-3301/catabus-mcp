@@ -19,14 +19,14 @@ GTFS_STATIC_URL = "https://catabus.com/wp-content/uploads/google_transit.zip"
 # Detect cloud environment for cache directory
 
 
-def get_cache_dir():
+def get_cache_dir() -> Path:
+    """Detect cloud environment and return appropriate cache directory."""
     # FastMCP Cloud, Lambda, or other cloud environments
     if (
         os.environ.get("LAMBDA_RUNTIME_DIR")
         or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
         or os.environ.get("FASTMCP_CLOUD")
-        or os.path.exists("/tmp")
-        and not os.path.exists(os.path.expanduser("~"))
+        or (os.path.exists("/tmp") and not os.path.exists(os.path.expanduser("~")))
     ):
         return Path("/tmp/catabus_cache")
     else:
@@ -88,7 +88,7 @@ class GTFSData:
 
 
 class StaticGTFSLoader:
-    def __init__(self):
+    def __init__(self) -> None:
         self.data = GTFSData()
         CACHE_DIR.mkdir(exist_ok=True)
 
