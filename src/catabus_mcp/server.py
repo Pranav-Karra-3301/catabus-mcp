@@ -49,9 +49,9 @@ async def ensure_initialized() -> None:
                 timeout=15.0,  # Maximum 15 seconds for cloud environments
             )
             if gtfs_data:
-                logger.info(
-                    f"GTFS data loaded: {len(gtfs_data.routes)} routes, {len(gtfs_data.stops)} stops"
-                )
+                route_count = len(gtfs_data.routes)
+                stop_count = len(gtfs_data.stops)
+                logger.info(f"GTFS data loaded: {route_count} routes, {stop_count} stops")
 
         except TimeoutError:
             logger.warning("GTFS data loading timed out - using empty dataset")

@@ -98,8 +98,8 @@ class TestMCPBasicFunctionality:
     @pytest.mark.asyncio
     async def test_list_routes_with_mocked_data(self, mock_gtfs_data):
         """Test list routes with mocked data."""
-        with patch("catabus_mcp.server_v2.gtfs_data", mock_gtfs_data):
-            with patch("catabus_mcp.server_v2.initialized", True):
+        with patch("catabus_mcp.server.gtfs_data", mock_gtfs_data):
+            with patch("catabus_mcp.server.initialized", True):
                 client = Client(mcp)
                 async with client:
                     result = await client.call_tool("list_routes_tool", {})
@@ -116,8 +116,8 @@ class TestMCPBasicFunctionality:
     @pytest.mark.asyncio
     async def test_search_stops(self, mock_gtfs_data):
         """Test stop search."""
-        with patch("catabus_mcp.server_v2.gtfs_data", mock_gtfs_data):
-            with patch("catabus_mcp.server_v2.initialized", True):
+        with patch("catabus_mcp.server.gtfs_data", mock_gtfs_data):
+            with patch("catabus_mcp.server.initialized", True):
                 client = Client(mcp)
                 async with client:
                     result = await client.call_tool("search_stops_tool", {"query": "HUB"})
@@ -131,8 +131,8 @@ class TestMCPBasicFunctionality:
     @pytest.mark.asyncio
     async def test_vehicle_positions(self, mock_realtime_data):
         """Test vehicle positions."""
-        with patch("catabus_mcp.server_v2.realtime_poller") as mock_poller:
-            with patch("catabus_mcp.server_v2.initialized", True):
+        with patch("catabus_mcp.server.realtime_poller") as mock_poller:
+            with patch("catabus_mcp.server.initialized", True):
                 mock_poller.data = mock_realtime_data
 
                 client = Client(mcp)
@@ -148,8 +148,8 @@ class TestMCPBasicFunctionality:
     @pytest.mark.asyncio
     async def test_health_check(self, mock_gtfs_data):
         """Test health check endpoint."""
-        with patch("catabus_mcp.server_v2.gtfs_data", mock_gtfs_data):
-            with patch("catabus_mcp.server_v2.initialized", True):
+        with patch("catabus_mcp.server.gtfs_data", mock_gtfs_data):
+            with patch("catabus_mcp.server.initialized", True):
                 client = Client(mcp)
                 async with client:
                     result = await client.call_tool("health_check", {})
@@ -179,9 +179,9 @@ class TestRealWorldScenarios:
     @pytest.mark.asyncio
     async def test_blue_loop_workflow(self, mock_gtfs_data, mock_realtime_data):
         """Test complete Blue Loop tracking workflow."""
-        with patch("catabus_mcp.server_v2.gtfs_data", mock_gtfs_data):
-            with patch("catabus_mcp.server_v2.realtime_poller") as mock_poller:
-                with patch("catabus_mcp.server_v2.initialized", True):
+        with patch("catabus_mcp.server.gtfs_data", mock_gtfs_data):
+            with patch("catabus_mcp.server.realtime_poller") as mock_poller:
+                with patch("catabus_mcp.server.initialized", True):
                     mock_poller.data = mock_realtime_data
 
                     client = Client(mcp)
@@ -208,8 +208,8 @@ class TestRealWorldScenarios:
     @pytest.mark.asyncio
     async def test_stop_search_workflow(self, mock_gtfs_data):
         """Test stop search and arrival workflow."""
-        with patch("catabus_mcp.server_v2.gtfs_data", mock_gtfs_data):
-            with patch("catabus_mcp.server_v2.initialized", True):
+        with patch("catabus_mcp.server.gtfs_data", mock_gtfs_data):
+            with patch("catabus_mcp.server.initialized", True):
                 client = Client(mcp)
                 async with client:
                     # Search for HUB stop
@@ -237,8 +237,8 @@ class TestPerformance:
     @pytest.mark.asyncio
     async def test_concurrent_requests(self, mock_gtfs_data):
         """Test concurrent tool calls."""
-        with patch("catabus_mcp.server_v2.gtfs_data", mock_gtfs_data):
-            with patch("catabus_mcp.server_v2.initialized", True):
+        with patch("catabus_mcp.server.gtfs_data", mock_gtfs_data):
+            with patch("catabus_mcp.server.initialized", True):
                 client = Client(mcp)
                 async with client:
                     # Make concurrent requests

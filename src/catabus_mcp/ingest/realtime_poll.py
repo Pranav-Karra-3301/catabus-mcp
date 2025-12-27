@@ -4,11 +4,11 @@ import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from typing import Any
 
 import aiohttp
 from google.transit import gtfs_realtime_pb2
 from pydantic import BaseModel, Field
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
