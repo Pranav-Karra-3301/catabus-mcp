@@ -3,11 +3,12 @@
 import csv
 import io
 import logging
+import os
 import zipfile
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import aiofiles
 import aiohttp
@@ -16,16 +17,21 @@ logger = logging.getLogger(__name__)
 
 GTFS_STATIC_URL = "https://catabus.com/wp-content/uploads/google_transit.zip"
 # Detect cloud environment for cache directory
-import os
-def get_cache_dir():
+
+
+def get_cache_dir() -> Path:
+    """Detect cloud environment and return appropriate cache directory."""
     # FastMCP Cloud, Lambda, or other cloud environments
-    if (os.environ.get('LAMBDA_RUNTIME_DIR') or 
-        os.environ.get('AWS_LAMBDA_FUNCTION_NAME') or
-        os.environ.get('FASTMCP_CLOUD') or
-        os.path.exists('/tmp') and not os.path.exists(os.path.expanduser('~'))):
+    if (
+        os.environ.get("LAMBDA_RUNTIME_DIR")
+        or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
+        or os.environ.get("FASTMCP_CLOUD")
+        or (os.path.exists("/tmp") and not os.path.exists(os.path.expanduser("~")))
+    ):
         return Path("/tmp/catabus_cache")
     else:
         return Path("cache")
+
 
 CACHE_DIR = get_cache_dir()
 
@@ -36,8 +42,8 @@ class Stop:
     stop_name: str
     stop_lat: float
     stop_lon: float
-    stop_code: Optional[str] = None
-    stop_desc: Optional[str] = None
+    stop_code: str | None = None
+    stop_desc: str | None = None
 
 
 @dataclass
@@ -46,8 +52,8 @@ class Route:
     route_short_name: str
     route_long_name: str
     route_type: int
-    route_color: Optional[str] = None
-    route_text_color: Optional[str] = None
+    route_color: str | None = None
+    route_text_color: str | None = None
 
 
 @dataclass
@@ -55,9 +61,9 @@ class Trip:
     trip_id: str
     route_id: str
     service_id: str
-    trip_headsign: Optional[str] = None
-    direction_id: Optional[int] = None
-    shape_id: Optional[str] = None
+    trip_headsign: str | None = None
+    direction_id: int | None = None
+    shape_id: str | None = None
 
 
 @dataclass
@@ -67,22 +73,22 @@ class StopTime:
     departure_time: str
     stop_id: str
     stop_sequence: int
-    pickup_type: Optional[int] = None
-    drop_off_type: Optional[int] = None
+    pickup_type: int | None = None
+    drop_off_type: int | None = None
 
 
 @dataclass
 class GTFSData:
-    routes: Dict[str, Route] = field(default_factory=dict)
-    stops: Dict[str, Stop] = field(default_factory=dict)
-    trips: Dict[str, Trip] = field(default_factory=dict)
-    stop_times: List[StopTime] = field(default_factory=list)
-    shapes: Dict[str, List[Dict[str, Any]]] = field(default_factory=dict)
-    last_updated: Optional[datetime] = None
+    routes: dict[str, Route] = field(default_factory=dict)
+    stops: dict[str, Stop] = field(default_factory=dict)
+    trips: dict[str, Trip] = field(default_factory=dict)
+    stop_times: list[StopTime] = field(default_factory=list)
+    shapes: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
+    last_updated: datetime | None = None
 
 
 class StaticGTFSLoader:
-    def __init__(self):
+    def __init__(self) -> None:
         self.data = GTFSData()
         CACHE_DIR.mkdir(exist_ok=True)
 
@@ -90,21 +96,23 @@ class StaticGTFSLoader:
         """Download the static GTFS feed with strict timeout for cloud deployment."""
         timeout = aiohttp.ClientTimeout(total=timeout_seconds, connect=5)
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            logger.info(f"Downloading GTFS feed from {GTFS_STATIC_URL} (timeout: {timeout_seconds}s)")
+            logger.info(
+                f"Downloading GTFS feed from {GTFS_STATIC_URL} (timeout: {timeout_seconds}s)"
+            )
             try:
                 async with session.get(GTFS_STATIC_URL) as response:
                     response.raise_for_status()
                     content = await response.read()
                     logger.info(f"Downloaded GTFS feed: {len(content)} bytes")
                     return content
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.error(f"Download timed out after {timeout_seconds}s")
                 raise
             except Exception as e:
                 logger.error(f"Download failed: {e}")
                 raise
 
-    def parse_csv(self, content: str) -> List[Dict[str, str]]:
+    def parse_csv(self, content: str) -> list[dict[str, str]]:
         """Parse CSV content into list of dictionaries."""
         reader = csv.DictReader(io.StringIO(content))
         return list(reader)
@@ -112,7 +120,7 @@ class StaticGTFSLoader:
     async def load_feed(self, force_refresh: bool = False, timeout_seconds: int = 30) -> GTFSData:
         """Load and parse the GTFS static feed with improved error handling."""
         cache_file = CACHE_DIR / "google_transit.zip"
-        feed_data: Optional[bytes] = None
+        feed_data: bytes | None = None
 
         # Attempt to download fresh data first
         if force_refresh or not cache_file.exists():
@@ -129,8 +137,10 @@ class StaticGTFSLoader:
                     async with aiofiles.open(cache_file, "rb") as f:
                         feed_data = await f.read()
                 else:
-                    logger.critical("No cached GTFS data available. The server will run without static data.")
-                    return self.data # Return empty data
+                    logger.critical(
+                        "No cached GTFS data available. The server will run without static data."
+                    )
+                    return self.data  # Return empty data
         else:
             # Use cached data if it's not too old
             age = datetime.now().timestamp() - cache_file.stat().st_mtime
@@ -149,10 +159,10 @@ class StaticGTFSLoader:
                     logger.warning(f"Failed to refresh stale cache: {e}. Using stale cache.")
                     async with aiofiles.open(cache_file, "rb") as f:
                         feed_data = await f.read()
-        
+
         if not feed_data:
             logger.error("Failed to load GTFS data from any source.")
-            return self.data # Return empty data
+            return self.data  # Return empty data
 
         # Parse the feed
         with zipfile.ZipFile(io.BytesIO(feed_data)) as zf:
@@ -209,7 +219,9 @@ class StaticGTFSLoader:
                         stop_id=row["stop_id"],
                         stop_sequence=int(row["stop_sequence"]),
                         pickup_type=int(row["pickup_type"]) if row.get("pickup_type") else None,
-                        drop_off_type=int(row["drop_off_type"]) if row.get("drop_off_type") else None,
+                        drop_off_type=(
+                            int(row["drop_off_type"]) if row.get("drop_off_type") else None
+                        ),
                     )
                     self.data.stop_times.append(stop_time)
 
@@ -220,14 +232,18 @@ class StaticGTFSLoader:
                     shape_id = row["shape_id"]
                     if shape_id not in self.data.shapes:
                         self.data.shapes[shape_id] = []
-                    self.data.shapes[shape_id].append({
-                        "lat": float(row["shape_pt_lat"]),
-                        "lon": float(row["shape_pt_lon"]),
-                        "sequence": int(row["shape_pt_sequence"]),
-                    })
+                    self.data.shapes[shape_id].append(
+                        {
+                            "lat": float(row["shape_pt_lat"]),
+                            "lon": float(row["shape_pt_lon"]),
+                            "sequence": int(row["shape_pt_sequence"]),
+                        }
+                    )
 
         self.data.last_updated = datetime.now()
-        logger.info(f"Loaded {len(self.data.routes)} routes, {len(self.data.stops)} stops, "
-                   f"{len(self.data.trips)} trips, {len(self.data.stop_times)} stop times")
-        
+        logger.info(
+            f"Loaded {len(self.data.routes)} routes, {len(self.data.stops)} stops, "
+            f"{len(self.data.trips)} trips, {len(self.data.stop_times)} stop times"
+        )
+
         return self.data

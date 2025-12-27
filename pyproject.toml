@@ -49,6 +49,29 @@ python_version = "3.11"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
+ignore_missing_imports = true
+# Disable error codes for issues with untyped third-party libraries
+disable_error_code = [
+    "no-any-return",
+    "misc",  # BaseModel subclass issues from pydantic
+    "unused-ignore",  # Ignore unused type: ignore comments
+]
+
+[[tool.mypy.overrides]]
+module = "catabus_mcp.server"
+# Allow untyped decorators from fastmcp
+disallow_untyped_decorators = false
+
+[[tool.mypy.overrides]]
+module = [
+    "aiohttp.*",
+    "aiofiles.*",
+    "fastmcp.*",
+    "google.transit.*",
+    "pydantic.*",
+    "pytz.*",
+]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
