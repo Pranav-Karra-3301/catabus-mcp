@@ -7,7 +7,7 @@ name = "catabus-mcp"
 version = "0.1.0"
 description = "MCP server for CATA bus system live and static schedule data"
 authors = [
-    { name = "CATA Bus MCP Contributors" }
+    { name = "Pranav Karra", email = "pranavkarra001@gmail.com" }
 ]
 readme = "README.md"
 license = "MIT"
@@ -21,6 +21,11 @@ dependencies = [
     "pytz>=2024.1",
     "aiofiles>=23.2.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Pranav-Karra-3301/catabus-mcp"
+Repository = "https://github.com/Pranav-Karra-3301/catabus-mcp"
+Author = "https://pranavkarra.me"
 
 [project.optional-dependencies]
 dev = [

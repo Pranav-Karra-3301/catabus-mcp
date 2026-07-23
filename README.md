@@ -16,7 +16,7 @@ A **Model Context Protocol (MCP)** server that provides live and static schedule
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/catabus-mcp.git
+git clone https://github.com/Pranav-Karra-3301/catabus-mcp.git
 cd catabus-mcp
 
 # Install dependencies
@@ -174,6 +174,8 @@ MIT License - See [LICENSE](LICENSE) file
 Transit data provided by Centre Area Transportation Authority (CATA).
 This project is not affiliated with or endorsed by CATA.
 
+Built by [Pranav Karra](https://pranavkarra.me).
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please:
@@ -186,8 +188,8 @@ Contributions are welcome! Please:
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/catabus-mcp/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/catabus-mcp/discussions)
+- **Issues**: [GitHub Issues](https://github.com/Pranav-Karra-3301/catabus-mcp/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/Pranav-Karra-3301/catabus-mcp/discussions)
 
 ## 🎯 Roadmap
 
